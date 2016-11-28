@@ -13,7 +13,9 @@ $getLastUpdate = mysqli_query($connection,"SELECT * FROM `telegramBotFeed` WHERE
 if($row = mysqli_fetch_array($getLastUpdate)){
 	$last_update = $row["lastupdate"];    
 	echo "<br>Before: $last_update";} 
-else {    
+else {
+    
+    
 	echo "Something went wrong";
 	}
 
@@ -37,16 +39,26 @@ function has_dupes($array){
 
 //Check each message
 $receivedMessage = $result["message"]["text"];
-preg_match_all('!https?://\S+!', $receivedMessage, $matches);
-$extractedLink = $matches[0][0];
 //Check if message is newer than last_update
 if ($last_update<$result["update_id"]){            
     $chat_id = $result["message"]["chat"]["id"];
     //TODO: Get URL object from JSON, how to get optional URL
+    
+    /*$urlExists = $result["message"]["entities"][0]["url"];
+    if($urlExists != "" || $urlExists != null){
+        $extractedLink = $urlExists;
+    } else {
+        //$extractedLink = $match[0][0]; 
+    }*/
+
+    preg_match_all('#(www\.|https?:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\S*)#i', $receivedMessage, $matches);
+
+foreach($matches[0] as $extractedLink){
+    //file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text=TestURL: '.$extractedLink.'.&chat_id='.$chat_id);
     $urlCheck = $result["message"]["entities"][0]["type"];
-    //$getURL = $result["message"]["entities"][0]["url"];
     //Stop Bot
     if($receivedMessage == "StopBot"){
+
         file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text=BotStopping&chat_id='.$chat_id);
         $break = true;
         break;
@@ -96,6 +108,7 @@ if ($last_update<$result["update_id"]){
         }
         array_push($extLinkArray, $extractedLink);*/
     }
+}
 }
 $last_update = $result["update_id"];
 mysqli_query($connection,"UPDATE `telegramBotFeed` SET `lastupdate`= '$last_update' WHERE `id` = 1");             
