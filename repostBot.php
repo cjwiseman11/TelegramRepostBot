@@ -1,21 +1,19 @@
 <?php
-//php /home/pepperte/public_html/feedify/bot/repostBot.php  
+//php /home/pepperte/public_html/feedify/bot/repostBot.php
 // Load configuration file outside of doc root
 //$root = "$_SERVER['DOCUMENT_ROOT']";
 $config = parse_ini_file("/home/pepperte/configTelegram.ini");
 $bot_id = $config['botid'];
 //Connecting to sql db.
 $connection = mysqli_connect("localhost",$config['username'],$config['password'],$config['dbname']);
-if($connection === false){    
+if($connection === false){
 //TODO: Add error
 }
 $getLastUpdate = mysqli_query($connection,"SELECT * FROM `telegramBotFeed` WHERE `id` = 1") or die(mysqli_error($connection));
 if($row = mysqli_fetch_array($getLastUpdate)){
-	$last_update = $row["lastupdate"];    
-	echo "<br>Before: $last_update";} 
+	$last_update = $row["lastupdate"];
+	echo "<br>Before: $last_update";}
 else {
-    
-    
 	echo "Something went wrong";
 	}
 
@@ -40,16 +38,29 @@ function has_dupes($array){
 //Check each message
 $receivedMessage = $result["message"]["text"];
 //Check if message is newer than last_update
-if ($last_update<$result["update_id"]){            
+if ($last_update<$result["update_id"]){
     $chat_id = $result["message"]["chat"]["id"];
     //TODO: Get URL object from JSON, how to get optional URL
-    
+
     /*$urlExists = $result["message"]["entities"][0]["url"];
     if($urlExists != "" || $urlExists != null){
         $extractedLink = $urlExists;
     } else {
-        //$extractedLink = $match[0][0]; 
+        //$extractedLink = $match[0][0];
     }*/
+
+if($receivedMessage == "/repoststats"){
+    $repoststats = mysqli_query($connection,"SELECT * FROM `stats` WHERE `chatid` = '$chat_id' ORDER BY reposts DESC") or die(mysqli_error($connection));
+    $i=1;
+    while($row3 = mysqli_fetch_array($repoststats)){
+        $message = $message . "%0A" . "$i. " . $row3["firstname"] .": ". $row3["reposts"];
+        $i++;
+    }
+    /*foreach($repoststats as $key2 => $result2){
+        $message = $message . "\n" . $result2["firstname"] .":". $result2["reposts"];
+    }*/
+    file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text='.$message.'&chat_id='.$chat_id);
+	}
 
     preg_match_all('#(www\.|https?:\/\/)?[a-zA-Z0-9]{2,}\.[a-zA-Z0-9]{2,}(\S*)#i', $receivedMessage, $matches);
 
@@ -62,18 +73,6 @@ foreach($matches[0] as $extractedLink){
         file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text=BotStopping&chat_id='.$chat_id);
         $break = true;
         break;
-    } else if($receivedMessage == "/repoststats"){
-        $repoststats = mysqli_query($connection,"SELECT * FROM `stats` WHERE `chatid` = $chat_id ORDER BY reposts DESC") or die(mysqli_error($connection));
-        $i=1;
-        while($row3 = mysqli_fetch_array($repoststats)){
-            $message = $message . "%0A" . "$i. " . $row3["firstname"] .": ". $row3["reposts"];
-            $i++;
-        }
-        echo "<br>Showing stats";
-        /*foreach($repoststats as $key2 => $result2){
-            $message = $message . "\n" . $result2["firstname"] .":". $result2["reposts"];
-        }*/
-        file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text='.$message.'&chat_id='.$chat_id);
     } else if($urlCheck == "url"){
         $urlCheck = mysqli_query($connection,"SELECT * FROM `urls` WHERE `url` = '$extractedLink' AND `chatid` = $chat_id") or die(mysqli_error($connection));
         $firstname = $result["message"]["from"]["first_name"];
@@ -111,7 +110,7 @@ foreach($matches[0] as $extractedLink){
 }
 }
 $last_update = $result["update_id"];
-mysqli_query($connection,"UPDATE `telegramBotFeed` SET `lastupdate`= '$last_update' WHERE `id` = 1");             
+mysqli_query($connection,"UPDATE `telegramBotFeed` SET `lastupdate`= '$last_update' WHERE `id` = 1");
 echo "<br>After: $last_update";
 
 //close the db connection
