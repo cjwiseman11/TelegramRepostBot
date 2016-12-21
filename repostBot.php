@@ -110,7 +110,8 @@ if ($last_update<$result["update_id"]){
 		preg_match_all('#\bhttps?://[^,\s()<>]+(?:\([\w\d]+\)|([^,[:punct:]\s]|/))#', $received_message, $matches);
 
 		file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text='.$url_exists.'&chat_id='.$chat_id.'&reply_to_message_id='.$original_msg_id);
-		foreach($matches[0] as $extracted_link){
+		$uniquematch = array_unique($matches[0]);
+		foreach($uniquematch as $extracted_link){
 
       $url_repost = urlRepostCheck($extracted_link, $chat_id);
 
@@ -118,7 +119,6 @@ if ($last_update<$result["update_id"]){
       $messageid = $result["message"]["message_id"];
 
       if($url_repost){
-
         $message = "wowow repost lul";
         $original_msg_id = $url_repost["messageid"];
         file_get_contents('https://api.telegram.org/bot' . $bot_id . '/sendMessage?text='.$message.'&chat_id='.$chat_id.'&reply_to_message_id='.$original_msg_id);
